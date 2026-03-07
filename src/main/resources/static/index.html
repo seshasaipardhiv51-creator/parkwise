@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Park Wise - Smart Parking</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{background:#0b1220;color:#e6edf3;min-height:100vh;}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(56,189,248,0.08), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(99,102,241,0.08), transparent 40%);
+  z-index:-1;
+}
+
+.login-screen{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;flex-direction:column;}
+.login-box{width:380px;padding:45px;border-radius:18px;background:rgba(15,23,42,0.95);border:1px solid rgba(255,255,255,0.06);box-shadow:0 30px 80px rgba(0,0,0,0.6);}
+.login-box h2{text-align:center;margin-bottom:25px;font-weight:600;}
+.login-box input{width:100%;padding:12px;margin:12px 0;border-radius:10px;background:#111827;border:1px solid rgba(255,255,255,0.05);color:white;}
+.login-box button{width:100%;margin-top:20px;padding:12px;border-radius:10px;border:none;font-weight:600;cursor:pointer;background:linear-gradient(135deg,#38bdf8,#6366f1);transition:0.2s;}
+.login-box button:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(56,189,248,0.3);}
+.register-link{margin-top:20px;text-align:center;font-size:14px;color:#94a3b8;cursor:pointer;text-decoration:underline;}
+
+nav{background:#0f172a;padding:18px 50px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.05);}
+.logo{font-size:20px;font-weight:700;background:linear-gradient(90deg,#38bdf8,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logout-btn{background:#111827;border:1px solid rgba(255,255,255,0.05);padding:10px 18px;border-radius:8px;cursor:pointer;color:white;}
+
+.container{padding:70px 100px;}
+h2{margin-bottom:35px;font-weight:600;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:30px;}
+.card{background:#111827;padding:40px 30px;border-radius:16px;text-align:center;cursor:pointer;border:1px solid rgba(255,255,255,0.05);transition:0.25s;}
+.card:hover{transform:translateY(-8px);border-color:#38bdf8;box-shadow:0 20px 40px rgba(56,189,248,0.15);}
+
+.blueprint{display:none;padding:70px 100px;}
+.parking-grid{display:grid;grid-template-columns:repeat(auto-fit,80px);gap:20px;justify-content:center;margin-top:30px;max-width:800px;margin-left:auto;margin-right:auto;}
+.slot{width:80px;height:100px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:600;cursor:pointer;transition:0.2s;border:2px solid transparent;}
+.empty{background:rgba(22,163,74,0.15);border-color:#16a34a;color:#4ade80;}
+.empty:hover{transform:scale(1.05);background:rgba(22,163,74,0.3);}
+.occupied{background:rgba(220,38,38,0.15);border-color:#dc2626;color:#f87171;cursor:not-allowed;}
+.blocked{background:rgba(234,179,8,0.15);border-color:#eab308;color:#fde047;cursor:not-allowed;}
+.back-btn{padding:10px 18px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);background:#1e293b;cursor:pointer;color:white;margin-bottom:30px;}
+
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);justify-content:center;align-items:center;z-index:1000;}
+.modal-content{width:400px;padding:30px;border-radius:16px;background:#111827;border:1px solid rgba(255,255,255,0.05);max-height:90vh;overflow-y:auto;}
+.modal-content input, .modal-content select {width:100%;padding:10px;margin:10px 0;border-radius:8px;background:#0f172a;border:1px solid rgba(255,255,255,0.05);color:white;outline:none;}
+.modal-content button{width:100%;padding:10px;margin-top:8px;border-radius:8px;border:none;cursor:pointer;font-weight:600;}
+.modal-content button:first-of-type{background:linear-gradient(135deg,#38bdf8,#6366f1);}
+.cancel-btn{background:#1e293b !important;color:white;}
+
+#adminPanel{display:none;padding:50px 100px;}
+table{width:100%;border-collapse:collapse;background:#111827;border-radius:12px;overflow:hidden;}
+th{background:#1e293b;padding:15px;}
+td{padding:12px;border-top:1px solid rgba(255,255,255,0.05);text-align:center;}
+.admin-controls{display:flex;gap:12px;align-items:center;margin-bottom:18px;}
+.filter-select{background:#0f172a;border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:8px;color:#e6edf3;}
+.count-badge{background:#111827;padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);font-weight:600;}
+
+.admin-tabs{display:flex;gap:15px;margin-bottom:30px;flex-wrap:wrap;}
+.tab-btn{padding:10px 20px;border-radius:8px;background:#111827;border:1px solid rgba(255,255,255,0.05);color:#94a3b8;cursor:pointer;font-weight:600;}
+.tab-btn.active{background:linear-gradient(135deg,#38bdf8,#6366f1);color:white;border:none;}
+
+.action-btn{padding:6px 12px;border-radius:6px;border:none;cursor:pointer;font-weight:600;font-size:12px;margin:0 4px;}
+.approve-btn{background:#16a34a;color:white;}
+.reject-btn{background:#dc2626;color:white;}
+
+.settings-box{max-width:800px;background:#111827;padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.05);margin:0 auto;}
+.settings-box label{display:block;margin-bottom:8px;color:#94a3b8;font-size:14px;}
+.settings-box input{width:100%;padding:12px;margin-bottom:20px;border-radius:8px;background:#0f172a;border:1px solid rgba(255,255,255,0.1);color:white;max-width:400px;}
+.settings-box button{width:100%;padding:12px;border-radius:8px;border:none;background:linear-gradient(135deg,#38bdf8,#6366f1);color:white;font-weight:600;cursor:pointer;max-width:400px;}
+
+.maint-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(60px, 1fr));gap:10px;margin-top:15px;margin-bottom:25px;}
+.maint-slot{height:60px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:600;font-size:14px;cursor:pointer;transition:0.2s;border:2px solid transparent;user-select:none;}
+.maint-active{background:rgba(22,163,74,0.15);border-color:#16a34a;color:#4ade80;}
+.maint-blocked{background:rgba(234,179,8,0.15);border-color:#eab308;color:#fde047;}
+.maint-occupied{background:rgba(220,38,38,0.15);border-color:#dc2626;color:#f87171;cursor:not-allowed;opacity:0.7;}
+.maint-slot.maint-active:hover, .maint-slot.maint-blocked:hover{transform:scale(1.05);}
+.btn-secondary{background:#1e293b !important;border:1px solid rgba(255,255,255,0.1) !important;}
+.btn-danger{background:#dc2626 !important; color:white !important;}
+
+#applicantDashboard, #closureDashboard{display:none;padding:50px 100px;text-align:center;}
+.status-card{background:#111827;padding:50px;border-radius:20px;border:1px solid rgba(255,255,255,0.05);max-width:600px;margin:0 auto;}
+.status-badge{display:inline-block;padding:8px 20px;border-radius:20px;font-weight:600;margin:20px 0;}
+.status-pending{background:rgba(234,179,8,0.15);color:#fde047;border:1px solid #eab308;}
+.status-approved{background:rgba(22,163,74,0.15);color:#4ade80;border:1px solid #16a34a;}
+.status-rejected{background:rgba(220,38,38,0.15);color:#f87171;border:1px solid #dc2626;}
+.cred-box{background:#0f172a;padding:20px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);margin:20px 0;text-align:left;font-family:monospace;font-size:16px;}
+</style>
+</head>
+<body>
+
+<div id="loginPage" class="login-screen">
+  <div class="login-box">
+    <h2>Park Wise Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <div class="register-link" onclick="openRegister()">+ Register a New Parking Location</div>
+  </div>
+</div>
+
+<div class="modal" id="registerModal">
+  <div class="modal-content">
+    <h3>Partner With Us</h3>
+    <input type="text" id="regName" placeholder="Your Full Name">
+    <input type="tel" id="regPhone" placeholder="Phone Number">
+    <select id="regCity"></select>
+    <input type="text" id="regLocation" placeholder="Location Name (e.g. Grand Mall)">
+    <input type="number" id="regSlots" placeholder="Total Parking Slots Available">
+    <button onclick="submitRegistration()">Submit Request</button>
+    <button class="cancel-btn" onclick="closeRegister()">Cancel</button>
+  </div>
+</div>
+
+<div id="mainApp" style="display:none;">
+  <nav>
+    <div class="logo">Park Wise</div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </nav>
+
+  <div class="container" id="citySection">
+    <h2>Select City</h2>
+    <div class="grid" id="cityGrid"></div>
+  </div>
+
+  <div class="container" id="locationSection" style="display:none;">
+    <button class="back-btn" onclick="backToCities()">← Back</button>
+    <h2 id="cityTitle"></h2>
+    <div class="grid" id="locationGrid"></div>
+  </div>
+
+  <div class="blueprint" id="blueprintSection">
+    <button class="back-btn" onclick="backToLocations()">← Back</button>
+    <h2 id="locationTitle"></h2>
+    <div class="parking-grid" id="parkingGrid"></div>
+  </div>
+</div>
+
+<div id="applicantDashboard">
+  <nav style="margin:-50px -100px 50px -100px;">
+    <div class="logo">Application Status</div>
+    <button class="logout-btn" onclick="acknowledgeResolution()">Logout & Close</button>
+  </nav>
+  <div class="status-card" id="statusCard"></div>
+</div>
+
+<div id="closureDashboard">
+  <nav style="margin:-50px -100px 50px -100px;">
+    <div class="logo">Termination Notice</div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </nav>
+  <div class="status-card">
+    <h2 style="color:#f87171;">Closure Approved</h2>
+    <div class="status-badge status-approved">Status: FINALIZED</div>
+    <p style="color:#94a3b8; margin-bottom:20px;">The Master Admin has approved your request to discontinue operations. Thank you for your partnership.</p>
+    <p style="color:#f87171; font-size:13px; margin-bottom:25px;">Once you acknowledge this notice, your credentials will be permanently destroyed and you will lose access to this dashboard.</p>
+    <button class="btn-danger" onclick="acknowledgeClosure()">Acknowledge & Deactivate Account</button>
+  </div>
+</div>
+
+<div id="adminPanel">
+  <nav>
+    <div class="logo">Admin Dashboard</div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h2 id="adminTitle">Dashboard</h2>
+    
+    <div class="admin-tabs" id="adminTabs" style="display:none;">
+      <button class="tab-btn active" id="tabBookings" onclick="switchAdminTab('bookings')">Live Bookings</button>
+      <button class="tab-btn" id="tabRequests" onclick="switchAdminTab('requests')">Location Requests</button>
+      <button class="tab-btn" id="tabClosures" onclick="switchAdminTab('closures')">Closure Requests</button>
+      <button class="tab-btn" id="tabCities" onclick="switchAdminTab('cities')">Manage Cities</button>
+      <button class="tab-btn" id="tabLocations" onclick="switchAdminTab('locations')">Manage Locations</button>
+      <button class="tab-btn" id="tabAdmins" onclick="switchAdminTab('admins')">Active Admins</button>
+      <button class="tab-btn" id="tabPastAdmins" onclick="switchAdminTab('pastAdmins')">Past Admins</button>
+      <button class="tab-btn" id="tabSettings" onclick="switchAdminTab('settings')">Location Settings</button>
+    </div>
+
+    <div id="adminBookingsView">
+      <div class="admin-controls">
+        <label for="adminFilter">Show:</label>
+        <select id="adminFilter" class="filter-select" onchange="loadAdminDashboard()">
+          <option value="all">All</option>
+          <option value="past">Past</option>
+          <option value="present">Present</option>
+          <option value="upcoming">Upcoming</option>
+        </select>
+        <div id="adminCounts" style="margin-left:auto;display:flex;gap:8px;">
+          <div class="count-badge" id="countAll">All: 0</div>
+          <div class="count-badge" id="countPast">Past: 0</div>
+          <div class="count-badge" id="countPresent">Present: 0</div>
+          <div class="count-badge" id="countUpcoming">Upcoming: 0</div>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>City</th><th>Location</th><th>Slot</th><th>Car</th><th>Phone</th><th>From</th><th>To</th></tr></thead>
+        <tbody id="adminTable"></tbody>
+      </table>
+    </div>
+
+    <div id="adminRequestsView" style="display:none;">
+      <table>
+        <thead><tr><th>Applicant Name</th><th>City</th><th>Location Name</th><th>Slots</th><th>Action</th></tr></thead>
+        <tbody id="requestsTable"></tbody>
+      </table>
+    </div>
+
+    <div id="adminClosuresView" style="display:none;">
+      <table>
+        <thead><tr><th>City</th><th>Location</th><th>Admin Name</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="closuresTable"></tbody>
+      </table>
+    </div>
+
+    <div id="adminCitiesView" style="display:none;">
+      <div class="settings-box" style="margin-bottom: 30px; margin-left: 0;">
+        <h3 style="margin-bottom:15px;">Add New City</h3>
+        <input type="text" id="newCityInput" placeholder="Enter City Name">
+        <button onclick="addCity()">Register City</button>
+      </div>
+      <table>
+        <thead><tr><th>City Name</th><th>Active Locations</th><th>Action</th></tr></thead>
+        <tbody id="citiesTable"></tbody>
+      </table>
+    </div>
+
+    <div id="adminLocationsView" style="display:none;">
+      <table>
+        <thead><tr><th>City</th><th>Location Name</th><th>Total Slots</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="locationsTable"></tbody>
+      </table>
+    </div>
+
+    <div id="adminAdminsView" style="display:none;">
+      <table>
+        <thead><tr><th>City</th><th>Location</th><th>Admin Name</th><th>Contact Phone</th><th>Username</th></tr></thead>
+        <tbody id="adminsTable"></tbody>
+      </table>
+    </div>
+
+    <div id="adminPastAdminsView" style="display:none;">
+      <table>
+        <thead><tr><th>City</th><th>Location</th><th>Former Admin</th><th>Contact Phone</th><th>Date Closed</th></tr></thead>
+        <tbody id="pastAdminsTable"></tbody>
+      </table>
+    </div>
+
+    <div id="adminSettingsView" style="display:none;">
+      <div class="settings-box">
+        <label>Location Name</label>
+        <input type="text" id="settingLocName">
+        <button onclick="updateLocationName()" class="btn-secondary">Rename Location</button>
+        <hr style="border:1px solid rgba(255,255,255,0.05); margin:30px 0;">
+        <label>Slot Maintenance (Click a slot to toggle Draft status)</label>
+        <p style="font-size:12px; color:#64748b; margin-bottom:10px;">Green = Operational, Yellow = Draft Block, Red = Currently Booked</p>
+        <div class="maint-grid" id="maintenanceGrid"></div>
+        <button onclick="saveMaintenance()">Save Maintenance Changes</button>
+        <hr style="border:1px solid rgba(255,255,255,0.05); margin:30px 0;">
+        <h3 style="color:#f87171; margin-bottom:10px;">Danger Zone</h3>
+        <p style="font-size:12px; color:#94a3b8; margin-bottom:15px;">Submit a request to the Master Admin to permanently shut down this location. This will instantly lock your location from new bookings and cancel all future reservations.</p>
+        <button onclick="requestClosure()" class="btn-danger" id="closureBtn">Request Location Closure</button>
+        <p id="closureStatusText" style="color:#eab308; font-size:13px; margin-top:10px; display:none;">Closure Request is pending Master Admin approval.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="bookingModal">
+  <div class="modal-content">
+    <h3>Book Slot <span id="slotLabel"></span></h3>
+    <input type="text" id="carNumber" placeholder="Car Number">
+    <input type="tel" id="phoneNumber" placeholder="Phone Number">
+    <label>From Date & Time</label>
+    <input type="datetime-local" id="fromDateTime">
+    <label>To Date & Time</label>
+    <input type="datetime-local" id="toDateTime">
+    <button onclick="confirmBooking()">Confirm Booking</button>
+    <button class="cancel-btn" onclick="closeModal()">Back</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const mockNames = ["Aarav Patel", "Riya Sharma", "Karan Singh", "Priya Gupta", "Amit Kumar", "Neha Desai", "Rahul Verma", "Sneha Joshi"];
+
+let systemData = JSON.parse(localStorage.getItem('parkwiseSystemData'));
+
+if (!systemData || !systemData.locationsData["Bangalore"]) {
+  const fullCitiesList = ["Mumbai","Delhi","Hyderabad","Bangalore","Chennai","Kolkata","Pune","Ahmedabad","Jaipur","Lucknow","Surat","Indore","Bhopal","Patna","Chandigarh"];
+  systemData = {
+    cities: fullCitiesList,
+    locationsData: {},
+    requests: systemData ? systemData.requests : [],
+    resolvedRequests: systemData ? systemData.resolvedRequests : [],
+    discontinueRequests: [],
+    pastAdmins: []
+  };
+  fullCitiesList.forEach(c => {
+    systemData.locationsData[c] = [
+      {name: "Central Plaza", slots: 20, blocked: [], isGlobalBlocked: false, isDisabled: false, isClosing: false},
+      {name: "Tech Park", slots: 20, blocked: [], isGlobalBlocked: false, isDisabled: false, isClosing: false}
+    ];
+  });
+} else {
+  if(!systemData.requests) systemData.requests = [];
+  if(!systemData.resolvedRequests) systemData.resolvedRequests = [];
+  if(!systemData.discontinueRequests) systemData.discontinueRequests = [];
+  if(!systemData.pastAdmins) systemData.pastAdmins = [];
+}
+
+if(systemData.locationsData) {
+  let needsSave = false;
+  Object.keys(systemData.locationsData).forEach(city => {
+    systemData.locationsData[city].forEach(loc => {
+      if(loc.isClosing === undefined) { loc.isClosing = false; needsSave = true; }
+      if(!loc.adminName) {
+        loc.adminName = mockNames[Math.floor(Math.random() * mockNames.length)];
+        loc.adminPhone = `+91 ${Math.floor(Math.random() * 9000000000 + 1000000000)}`;
+        needsSave = true;
+      }
+    });
+  });
+  if(needsSave) saveSystemData();
+}
+
+function saveSystemData() { localStorage.setItem('parkwiseSystemData', JSON.stringify(systemData)); }
+
+let currentCity = "", currentLocation = "", selectedSlot = null, currentSlotCount = 20;
+let loggedInAdmin = null;
+let currentApplicantId = null;
+let currentClosureReq = null;
+
+function formatString(str) { return str.toLowerCase().replace(/\s+/g, ''); }
+
+function getBookings(){
+  try {
+    const b = JSON.parse(localStorage.getItem('parkwiseBookings'));
+    return Array.isArray(b) ? b : [];
+  } catch(e) { return []; }
+}
+function saveBookings(arr){ localStorage.setItem('parkwiseBookings', JSON.stringify(arr)); }
+
+/* --- LOGIN & AUTH --- */
+function openRegister() { 
+  const citySelect = $('regCity');
+  citySelect.innerHTML = '<option value="" disabled selected>Select an approved City...</option>';
+  systemData.cities.forEach(city => {
+    const opt = document.createElement('option');
+    opt.value = city;
+    opt.innerText = city;
+    citySelect.appendChild(opt);
+  });
+  $('registerModal').style.display = 'flex'; 
+}
+
+function closeRegister() { $('registerModal').style.display = 'none'; }
+
+function submitRegistration() {
+  const name = $('regName').value.trim();
+  const phone = $('regPhone').value.trim();
+  const city = $('regCity').value;
+  const loc = $('regLocation').value.trim();
+  const slots = parseInt($('regSlots').value);
+
+  if(!name || !phone || !city || !loc || !slots || slots <= 0) return alert("❌ Please fill all details correctly.");
+
+  const tempUser = `${formatString(city)}@${formatString(loc)}${slots}`;
+  const tempPass = `pending@${slots}-${formatString(loc)}`;
+  const newReq = { id: Date.now(), name, phone, city, location: loc, slots, tempUser, tempPass, status: 'pending' };
+  
+  systemData.requests.push(newReq);
+  saveSystemData();
+  
+  alert(`✅ Request submitted!\n\nPlease save your Temporary Tracking Credentials to check your approval status:\n\nUsername: ${tempUser}\nPassword: ${tempPass}`);
+  closeRegister();
+}
+
+function login(){
+  const user = $('username').value.trim();
+  const pass = $('password').value.trim();
+
+  if(user === "Pardhiv" && pass === "Pardhiv@2008"){
+    loggedInAdmin = {type:"super"};
+    $('loginPage').style.display="none";
+    $('adminPanel').style.display="block";
+    $('adminTabs').style.display="flex";
+    ['tabRequests', 'tabClosures', 'tabCities', 'tabLocations', 'tabAdmins', 'tabPastAdmins'].forEach(t => $(t).style.display = 'inline-block');
+    $('tabSettings').style.display = 'none';
+    switchAdminTab('bookings');
+    return;
+  }
+
+  const pendingReq = systemData.requests.find(r => r.tempUser === user && r.tempPass === pass);
+  if(pendingReq) return showApplicantDashboard(pendingReq, 'pending');
+
+  const resolvedReq = systemData.resolvedRequests.find(r => r.tempUser === user && r.tempPass === pass);
+  if(resolvedReq) {
+    currentApplicantId = resolvedReq.id;
+    return showApplicantDashboard(resolvedReq, resolvedReq.status);
+  }
+
+  for(let i=0; i<systemData.cities.length; i++){
+    let city = systemData.cities[i];
+    let cityNo = i+1;
+    let cityLocs = systemData.locationsData[city] || [];
+    
+    for(let j=0; j<cityLocs.length; j++){
+      let loc = cityLocs[j];
+      let expectedUser = `${formatString(city)}-${formatString(loc.name)}`;
+      let expectedPass = `${formatString(loc.name)}@${cityNo}${j+1}`; 
+
+      if(user === expectedUser && pass === expectedPass){
+        if(loc.isDisabled) {
+          alert("❌ Account Disabled: This location has been permanently closed.");
+          return;
+        }
+
+        const cloReq = systemData.discontinueRequests.find(r => r.city === city && r.location === loc.name && r.status === 'approved');
+        if(cloReq) {
+          currentClosureReq = cloReq;
+          $('loginPage').style.display = 'none';
+          $('closureDashboard').style.display = 'block';
+          return;
+        }
+
+        loggedInAdmin = { type:"local", city:city, location:loc.name };
+        $('loginPage').style.display="none";
+        $('adminPanel').style.display="block";
+        $('adminTabs').style.display="flex"; 
+        ['tabRequests', 'tabClosures', 'tabCities', 'tabLocations', 'tabAdmins', 'tabPastAdmins'].forEach(t => $(t).style.display = 'none');
+        $('tabSettings').style.display = 'inline-block';
+        switchAdminTab('bookings');
+        return;
+      }
+    }
+  }
+
+  $('loginPage').style.display="none";
+  $('mainApp').style.display="block";
+  generateCities();
+}
+
+function logout(){ location.reload(); }
+
+/* --- APPLICANT DASHBOARD --- */
+function showApplicantDashboard(reqData, status) {
+  $('loginPage').style.display = 'none';
+  $('applicantDashboard').style.display = 'block';
+  const card = $('statusCard');
+  
+  if(status === 'pending') {
+    card.innerHTML = `
+      <h2>Application Received</h2>
+      <div class="status-badge status-pending">Status: PENDING REVIEW</div>
+      <p style="color:#94a3b8;">The Master Admin is currently reviewing your request for <b>${reqData.location}</b> in <b>${reqData.city}</b>.</p>
+    `;
+  } else if(status === 'approved') {
+    card.innerHTML = `
+      <h2>Application Approved!</h2>
+      <div class="status-badge status-approved">Status: APPROVED</div>
+      <div class="cred-box">
+        <b>Username:</b> ${reqData.finalUser}<br>
+        <b>Password:</b> ${reqData.finalPass}
+      </div>
+      <p style="color:#f87171; font-size:12px; margin-bottom:20px;">Once you acknowledge, this tracking account will be permanently deleted.</p>
+      <button class="btn-secondary" onclick="acknowledgeResolution()">I have saved my credentials (Logout)</button>
+    `;
+  } else if(status === 'rejected') {
+    card.innerHTML = `
+      <h2>Application Rejected</h2>
+      <div class="status-badge status-rejected">Status: REJECTED</div>
+      <button class="btn-secondary" onclick="acknowledgeResolution()" style="margin-top:20px;">Acknowledge & Close</button>
+    `;
+  }
+}
+
+function acknowledgeResolution() {
+  if(currentApplicantId) {
+    systemData.resolvedRequests = systemData.resolvedRequests.filter(r => r.id !== currentApplicantId);
+    saveSystemData();
+  }
+  location.reload();
+}
+
+/* --- CLOSURE / OFFBOARDING FLOW --- */
+function requestClosure() {
+  const exists = systemData.discontinueRequests.find(r => r.city === loggedInAdmin.city && r.location === loggedInAdmin.location);
+  if(exists) return;
+  
+  const locs = systemData.locationsData[loggedInAdmin.city];
+  const locObj = locs.find(l => l.name === loggedInAdmin.location);
+
+  locObj.isClosing = true;
+
+  systemData.discontinueRequests.push({
+    id: Date.now(),
+    city: loggedInAdmin.city,
+    location: loggedInAdmin.location,
+    adminName: locObj.adminName,
+    status: 'pending'
+  });
+
+  let bookings = getBookings();
+  const now = new Date();
+  let cancelledCount = 0;
+  bookings = bookings.filter(b => {
+    if(b.city === loggedInAdmin.city && b.location === loggedInAdmin.location) {
+      if(new Date(b.from) > now) {
+        cancelledCount++;
+        return false;
+      }
+    }
+    return true;
+  });
+  
+  saveBookings(bookings);
+  saveSystemData();
+  loadSettingsView();
+  
+  alert(`✅ Closure request sent to Master Admin.\n\nImmediate Actions Taken:\n- Location locked from accepting new bookings.\n- ${cancelledCount} future bookings automatically cancelled.`);
+}
+
+function acknowledgeClosure() {
+  const locs = systemData.locationsData[currentClosureReq.city];
+  const locObj = locs.find(l => l.name === currentClosureReq.location);
+  
+  systemData.pastAdmins.push({
+    city: currentClosureReq.city,
+    location: currentClosureReq.location,
+    adminName: locObj.adminName,
+    adminPhone: locObj.adminPhone,
+    closedAt: new Date().toLocaleDateString()
+  });
+  
+  locObj.isDisabled = true;
+  systemData.discontinueRequests = systemData.discontinueRequests.filter(r => r.id !== currentClosureReq.id);
+  saveSystemData();
+  location.reload();
+}
+
+/* --- SUPER ADMIN DASHBOARD UI --- */
+function switchAdminTab(tab) {
+  ['tabBookings', 'tabRequests', 'tabClosures', 'tabCities', 'tabLocations', 'tabAdmins', 'tabPastAdmins', 'tabSettings'].forEach(t => { if($(t)) $(t).classList.remove('active'); });
+  ['adminBookingsView', 'adminRequestsView', 'adminClosuresView', 'adminCitiesView', 'adminLocationsView', 'adminAdminsView', 'adminPastAdminsView', 'adminSettingsView'].forEach(v => { if($(v)) $(v).style.display = 'none'; });
+
+  if(tab === 'bookings') { $('tabBookings').classList.add('active'); $('adminBookingsView').style.display = 'block'; loadAdminDashboard(); }
+  else if(tab === 'requests') { $('tabRequests').classList.add('active'); $('adminRequestsView').style.display = 'block'; loadRequestsView(); }
+  else if(tab === 'closures') { $('tabClosures').classList.add('active'); $('adminClosuresView').style.display = 'block'; loadClosuresView(); }
+  else if(tab === 'cities') { $('tabCities').classList.add('active'); $('adminCitiesView').style.display = 'block'; loadCitiesView(); }
+  else if(tab === 'locations') { $('tabLocations').classList.add('active'); $('adminLocationsView').style.display = 'block'; loadGlobalLocations(); }
+  else if(tab === 'admins') { $('tabAdmins').classList.add('active'); $('adminAdminsView').style.display = 'block'; loadAdminsView(); }
+  else if(tab === 'pastAdmins') { $('tabPastAdmins').classList.add('active'); $('adminPastAdminsView').style.display = 'block'; loadPastAdminsView(); }
+  else if(tab === 'settings') { $('tabSettings').classList.add('active'); $('adminSettingsView').style.display = 'block'; loadSettingsView(); }
+}
+
+/* --- CITIES MANAGEMENT --- */
+function loadCitiesView() {
+  const tbody = $('citiesTable');
+  tbody.innerHTML = '';
+  
+  systemData.cities.forEach(city => {
+    const locs = systemData.locationsData[city] || [];
+    const activeLocsCount = locs.filter(l => !l.isDisabled).length;
+    
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-weight:600;">${escapeHtml(city)}</td>
+      <td>${activeLocsCount} Location(s)</td>
+      <td>
+        <button class="action-btn reject-btn" onclick="removeCity('${escapeHtml(city)}')">Delete City</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function addCity() {
+  const newCity = $('newCityInput').value.trim();
+  if(!newCity) return alert("❌ Enter a city name.");
+
+  const exists = systemData.cities.some(c => c.toLowerCase() === newCity.toLowerCase());
+  if(exists) return alert("❌ City already exists in the system.");
+
+  // Formalize capitalization (e.g. "new york" -> "New York")
+  const formattedCity = newCity.replace(/\b\w/g, char => char.toUpperCase());
+
+  systemData.cities.push(formattedCity);
+  systemData.locationsData[formattedCity] = [];
+  saveSystemData();
+  
+  $('newCityInput').value = '';
+  loadCitiesView();
+  alert(`✅ ${formattedCity} has been successfully added to the platform.`);
+}
+
+function removeCity(cityName) {
+  const confirmDel = confirm(`⚠️ WARNING: CASCADING DELETE ⚠️\n\nAre you absolutely sure you want to permanently delete ${cityName}?\n\nThis action will:\n1. Delete the City from the registry.\n2. Delete ALL Locations within the city.\n3. Delete ALL Bookings tied to this city.\n\nThis cannot be undone.`);
+  
+  if(confirmDel) {
+    // 1. Remove from cities array
+    systemData.cities = systemData.cities.filter(c => c !== cityName);
+    
+    // 2. Remove location records
+    delete systemData.locationsData[cityName];
+    
+    // 3. Remove all pending closure/discontinue requests for this city to prevent ghost data
+    systemData.discontinueRequests = systemData.discontinueRequests.filter(r => r.city !== cityName);
+    
+    saveSystemData();
+
+    // 4. Scrub bookings database
+    let bookings = getBookings();
+    bookings = bookings.filter(b => b.city !== cityName);
+    saveBookings(bookings);
+
+    loadCitiesView();
+    alert(`🗑️ ${cityName} and all associated data has been permanently scrubbed from the system.`);
+  }
+}
+
+
+function loadClosuresView() {
+  const tbody = $('closuresTable');
+  tbody.innerHTML = '';
+  systemData.discontinueRequests.forEach(req => {
+    if(req.status !== 'pending') return;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(req.city)}</td>
+      <td>${escapeHtml(req.location)}</td>
+      <td>${escapeHtml(req.adminName)}</td>
+      <td><span style="color:#fde047;">Pending Approval</span></td>
+      <td><button class="action-btn approve-btn" onclick="approveClosure(${req.id})">Approve Shutdown</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function approveClosure(id) {
+  const req = systemData.discontinueRequests.find(r => r.id === id);
+  if(req) {
+    req.status = 'approved';
+    saveSystemData();
+    loadClosuresView();
+  }
+}
+
+function loadPastAdminsView() {
+  const tbody = $('pastAdminsTable');
+  tbody.innerHTML = '';
+  systemData.pastAdmins.forEach(admin => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(admin.city)}</td>
+      <td style="color:#94a3b8;">${escapeHtml(admin.location)} (Closed)</td>
+      <td>${escapeHtml(admin.adminName)}</td>
+      <td>${escapeHtml(admin.adminPhone)}</td>
+      <td>${escapeHtml(admin.closedAt)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function loadGlobalLocations() {
+  const tbody = $('locationsTable');
+  tbody.innerHTML = '';
+  systemData.cities.forEach((city) => {
+    const locs = systemData.locationsData[city] || [];
+    locs.forEach((locObj) => {
+      if(locObj.isDisabled) return;
+      const isBlocked = locObj.isGlobalBlocked || false;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${city}</td>
+        <td>${locObj.name}</td>
+        <td>${locObj.slots}</td>
+        <td><span style="color:${isBlocked ? '#f87171' : '#4ade80'}; font-weight:600;">${isBlocked ? 'BLOCKED' : 'ACTIVE'}</span></td>
+        <td><button class="action-btn ${isBlocked ? 'approve-btn' : 'reject-btn'}" onclick="toggleGlobalBlock('${city}', '${locObj.name}')">${isBlocked ? 'Unblock Location' : 'Block Location'}</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+function toggleGlobalBlock(city, locName) {
+  const locObj = systemData.locationsData[city].find(l => l.name === locName);
+  if(locObj) { locObj.isGlobalBlocked = !locObj.isGlobalBlocked; saveSystemData(); loadGlobalLocations(); }
+}
+
+function loadRequestsView() {
+  const tbody = $('requestsTable');
+  tbody.innerHTML = '';
+  systemData.requests.forEach(req => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(req.name)}<br><small style="color:#64748b;">${escapeHtml(req.phone)}</small></td>
+      <td>${escapeHtml(req.city)}</td>
+      <td>${escapeHtml(req.location)}</td>
+      <td>${req.slots}</td>
+      <td>
+        <button class="action-btn approve-btn" onclick="approveRequest(${req.id})">Approve</button>
+        <button class="action-btn reject-btn" onclick="rejectRequest(${req.id})">Reject</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function loadAdminsView() {
+  const tbody = $('adminsTable');
+  tbody.innerHTML = '';
+  systemData.cities.forEach((city) => {
+    const locs = systemData.locationsData[city] || [];
+    locs.forEach((locObj) => {
+      if(locObj.isDisabled) return;
+      const expectedUser = `${formatString(city)}-${formatString(locObj.name)}`;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${city}</td>
+        <td>${locObj.name}</td>
+        <td style="font-weight:600;">${escapeHtml(locObj.adminName || 'Pending Setup')}</td>
+        <td>${escapeHtml(locObj.adminPhone || 'N/A')}</td>
+        <td style="font-family:monospace; color:#38bdf8;">${expectedUser}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+function approveRequest(id) {
+  const reqIndex = systemData.requests.findIndex(r => r.id === id);
+  if(reqIndex === -1) return;
+  const req = systemData.requests[reqIndex];
+
+  let actualCity = req.city;
+  if(!systemData.locationsData[actualCity]) systemData.locationsData[actualCity] = [];
+  let cIdx = systemData.cities.indexOf(actualCity);
+  
+  const locExists = systemData.locationsData[actualCity].find(l => l.name.toLowerCase() === req.location.toLowerCase());
+  if(!locExists) {
+    systemData.locationsData[actualCity].push({ 
+      name: req.location, slots: req.slots, blocked: [], isGlobalBlocked: false, isDisabled: false, isClosing: false, adminName: req.name, adminPhone: req.phone
+    });
+  }
+
+  let lIdx = systemData.locationsData[actualCity].findIndex(l => l.name.toLowerCase() === req.location.toLowerCase());
+  req.status = 'approved';
+  req.finalUser = `${formatString(actualCity)}-${formatString(req.location)}`;
+  req.finalPass = `${formatString(req.location)}@${cIdx+1}${lIdx+1}`;
+  
+  systemData.resolvedRequests.push(req);
+  systemData.requests.splice(reqIndex, 1);
+  saveSystemData();
+  loadRequestsView();
+}
+
+function rejectRequest(id) {
+  const reqIndex = systemData.requests.findIndex(r => r.id === id);
+  if(reqIndex === -1) return;
+  const req = systemData.requests[reqIndex];
+  req.status = 'rejected';
+  systemData.resolvedRequests.push(req);
+  systemData.requests.splice(reqIndex, 1);
+  saveSystemData();
+  loadRequestsView();
+}
+
+/* --- LOCAL ADMIN SETTINGS --- */
+function loadSettingsView() {
+  if(!loggedInAdmin || loggedInAdmin.type !== 'local') return;
+  const locObj = systemData.locationsData[loggedInAdmin.city].find(l => l.name === loggedInAdmin.location);
+  if(locObj) {
+    $('settingLocName').value = locObj.name;
+    window.draftBlockedSlots = [...(locObj.blocked || [])]; 
+    renderMaintenanceGrid(locObj);
+
+    const pendingClosure = systemData.discontinueRequests.find(r => r.city === loggedInAdmin.city && r.location === loggedInAdmin.location && r.status === 'pending');
+    if(pendingClosure) {
+      $('closureBtn').style.display = 'none';
+      $('closureStatusText').style.display = 'block';
+    } else {
+      $('closureBtn').style.display = 'block';
+      $('closureStatusText').style.display = 'none';
+    }
+  }
+}
+
+function renderMaintenanceGrid(locObj) {
+  const grid = $('maintenanceGrid');
+  grid.innerHTML = '';
+  const bookings = getBookings();
+  const now = new Date();
+  
+  for(let i=1; i<=locObj.slots; i++) {
+    const slotId = 'S' + i;
+    const div = document.createElement('div');
+    const isOccupied = bookings.some(b => b.city === loggedInAdmin.city && b.location === loggedInAdmin.location && b.slot === slotId && now >= new Date(b.from) && now < new Date(b.to));
+    
+    if(isOccupied) {
+      div.className = 'maint-slot maint-occupied';
+      div.innerHTML = `<span>${slotId}</span><small style="font-size:9px;">BOOKED</small>`;
+      div.onclick = () => alert("❌ You cannot modify a slot while a car is actively parked in it.");
+    } else if(window.draftBlockedSlots.includes(slotId)) {
+      div.className = 'maint-slot maint-blocked';
+      div.innerHTML = `<span>${slotId}</span><small style="font-size:9px;">MAINT</small>`;
+      div.onclick = () => toggleMaintenanceDraft(slotId, locObj);
+    } else {
+      div.className = 'maint-slot maint-active';
+      div.innerHTML = `<span>${slotId}</span><small style="font-size:9px;">FREE</small>`;
+      div.onclick = () => toggleMaintenanceDraft(slotId, locObj);
+    }
+    grid.appendChild(div);
+  }
+}
+
+function toggleMaintenanceDraft(slotId, locObj) {
+  const index = window.draftBlockedSlots.indexOf(slotId);
+  if(index === -1) window.draftBlockedSlots.push(slotId);
+  else window.draftBlockedSlots.splice(index, 1);
+  renderMaintenanceGrid(locObj);
+}
+
+function saveMaintenance() {
+  const locObj = systemData.locationsData[loggedInAdmin.city].find(l => l.name === loggedInAdmin.location);
+  locObj.blocked = [...window.draftBlockedSlots];
+  saveSystemData();
+  alert("✅ Maintenance layout successfully saved.");
+}
+
+function updateLocationName() {
+  const newName = $('settingLocName').value.trim();
+  if(!newName) return alert("❌ Invalid location name.");
+  const cityLocs = systemData.locationsData[loggedInAdmin.city];
+  if(loggedInAdmin.location === newName) return;
+  if(cityLocs.some(l => l.name.toLowerCase() === newName.toLowerCase())) return alert("❌ Location name already exists.");
+
+  const locIndex = cityLocs.findIndex(l => l.name === loggedInAdmin.location);
+  cityLocs[locIndex].name = newName;
+  saveSystemData();
+
+  let bookings = getBookings();
+  bookings.forEach(b => { if(b.city === loggedInAdmin.city && b.location === loggedInAdmin.location) b.location = newName; });
+  saveBookings(bookings);
+
+  alert(`✅ Location Updated! You must log in with your newly calculated credentials.`);
+  logout();
+}
+
+/* --- USER APP FLOW --- */
+function generateCities(){
+  const grid = $('cityGrid');
+  grid.innerHTML = '';
+  systemData.cities.forEach(city => {
+    const activeLocs = (systemData.locationsData[city] || []).filter(l => !l.isDisabled);
+    const d = document.createElement('div');
+    d.className = 'card';
+    d.innerText = city;
+    
+    if(activeLocs.length > 0) {
+      d.onclick = () => openCity(city);
+    } else {
+      d.style.opacity = '0.5';
+      d.style.cursor = 'not-allowed';
+      d.innerHTML += `<br><small style="color:#94a3b8;">Coming Soon</small>`;
+    }
+    grid.appendChild(d);
+  });
+}
+
+function openCity(city){
+  currentCity = city;
+  $('citySection').style.display = 'none';
+  $('locationSection').style.display = 'block';
+  $('cityTitle').innerText = city + " - Select Location";
+
+  const bookings = getBookings();
+  const now = new Date();
+  const activeCounts = {};
+  bookings.forEach(b => { if(b.city === city && now >= new Date(b.from) && now < new Date(b.to)) activeCounts[b.location] = (activeCounts[b.location] || 0) + 1; });
+
+  const locGrid = $('locationGrid');
+  locGrid.innerHTML = '';
+  const cityLocs = (systemData.locationsData[city] || []).filter(l => !l.isDisabled);
+
+  cityLocs.forEach(locObj => {
+    const isGlobalBlocked = locObj.isGlobalBlocked || false;
+    const isClosing = locObj.isClosing || false;
+    const blockedCount = (locObj.blocked || []).length;
+    const active = activeCounts[locObj.name] || 0;
+    const available = locObj.slots - active - blockedCount;
+    
+    const d = document.createElement('div');
+    d.className = 'card';
+    
+    if(isGlobalBlocked) {
+      d.innerHTML = `<h3 style="margin-bottom: 8px; color:#94a3b8;">${locObj.name}</h3><span style="font-size: 0.9em; font-weight: 500; color: #f87171;">Platform Maintenance</span>`;
+      d.style.opacity = '0.4';
+      d.style.cursor = 'not-allowed';
+    } else if(isClosing) {
+      d.innerHTML = `<h3 style="margin-bottom: 8px; color:#94a3b8;">${locObj.name}</h3><span style="font-size: 0.9em; font-weight: 500; color: #eab308;">Pending Closure (Locked)</span>`;
+      d.style.opacity = '0.4';
+      d.style.cursor = 'not-allowed';
+    } else {
+      d.innerHTML = `<h3 style="margin-bottom: 8px;">${locObj.name}</h3><span style="font-size: 0.9em; font-weight: 500; color: ${available > 0 ? '#4ade80' : '#f87171'};">${available} / ${locObj.slots} Available</span>`;
+      if (available > 0) d.onclick = () => openLocation(locObj.name, locObj.slots);
+      else { d.style.opacity = '0.5'; d.style.cursor = 'not-allowed'; }
+    }
+    locGrid.appendChild(d);
+  });
+}
+
+function backToCities(){ $('locationSection').style.display = 'none'; $('citySection').style.display = 'block'; generateCities(); }
+function openLocation(loc, slots){ currentLocation = loc; currentSlotCount = slots; $('locationSection').style.display = 'none'; $('blueprintSection').style.display = 'block'; $('locationTitle').innerText = currentCity + " - " + loc; generateSlots(); }
+function backToLocations(){ $('blueprintSection').style.display = 'none'; $('locationSection').style.display = 'block'; openCity(currentCity); }
+
+function generateSlots(){
+  const grid = $('parkingGrid');
+  grid.innerHTML = '';
+  const bookings = getBookings();
+  const now = new Date();
+  const locObj = (systemData.locationsData[currentCity] || []).find(l => l.name === currentLocation) || {};
+  const blockedSlots = locObj.blocked || [];
+
+  for(let i=1; i<=currentSlotCount; i++){
+    const id = 'S' + i;
+    const div = document.createElement('div');
+    div.className = 'slot';
+    const isBlocked = blockedSlots.includes(id);
+    const isOccupied = bookings.some(b => b.city === currentCity && b.location === currentLocation && b.slot === id && now >= new Date(b.from) && now < new Date(b.to));
+
+    if(isBlocked) { div.classList.add('blocked'); div.innerHTML = `<span>${id}</span><small style="font-size:10px;">MAINT</small>`; } 
+    else if(isOccupied){ div.classList.add('occupied'); div.innerHTML = `<span>${id}</span><small style="font-size:10px;">BOOKED</small>`; } 
+    else { div.classList.add('empty'); div.innerHTML = `<span>${id}</span><small style="font-size:10px;">FREE</small>`; div.onclick = () => openBookingModal(id); }
+    grid.appendChild(div);
+  }
+}
+
+function openBookingModal(slotID){ selectedSlot = slotID; $('slotLabel').innerText = slotID; $('bookingModal').style.display = 'flex'; }
+function closeModal(){ $('bookingModal').style.display = 'none'; }
+
+function confirmBooking(){
+  const car = $('carNumber').value.trim();
+  const phone = $('phoneNumber').value.trim();
+  const from = $('fromDateTime').value;
+  const to = $('toDateTime').value;
+
+  if(!car || !phone || !from || !to) return alert("❌ Fill all details");
+  const newStart = new Date(from), newEnd = new Date(to);
+  if(newStart >= newEnd) return alert("❌ Invalid time range");
+
+  const bookings = getBookings();
+  if(bookings.some(b => b.city === currentCity && b.location === currentLocation && b.slot === selectedSlot && newStart < new Date(b.to) && newEnd > new Date(b.from))) return alert("❌ Slot already booked during this time");
+
+  bookings.push({ city: currentCity, location: currentLocation, slot: selectedSlot, carNumber: car, phoneNumber: phone, from: from, to: to });
+  saveBookings(bookings);
+  
+  const now = new Date();
+  const isLiveNow = newStart <= now && newEnd > now;
+  const msg = isLiveNow ? "✅ Slot booked successfully and is now ACTIVE." : `✅ Slot booked successfully for a FUTURE date.\n\nNote: Because the blueprint is a Live Monitoring tool, your slot will remain green until the scheduled time starts.`;
+  
+  alert(msg);
+  closeModal();
+  generateSlots();
+}
+
+function categorizeBooking(b, now){
+  const s = new Date(b.from), e = new Date(b.to);
+  if(e <= now) return 'past';
+  if(s <= now && now < e) return 'present';
+  return 'upcoming';
+}
+
+function loadAdminDashboard(){
+  let bookings = getBookings();
+  const tbody = $('adminTable');
+  tbody.innerHTML = '';
+
+  if (loggedInAdmin && loggedInAdmin.type === 'local') {
+    bookings = bookings.filter(b => b.city === loggedInAdmin.city && b.location === loggedInAdmin.location);
+    $('adminTitle').innerText = `${loggedInAdmin.city} - ${loggedInAdmin.location} Dashboard`;
+  } else {
+    $('adminTitle').innerText = `Global Master Dashboard`;
+  }
+
+  let counts = { all: 0, past: 0, present: 0, upcoming: 0 };
+  const now = new Date();
+  const filter = $('adminFilter').value || 'all';
+
+  bookings.forEach(b => {
+    const cat = categorizeBooking(b, now);
+    counts.all++; counts[cat]++;
+    if(filter === 'all' || cat === filter){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${escapeHtml(b.city)}</td><td>${escapeHtml(b.location)}</td><td>${escapeHtml(b.slot)}</td><td>${escapeHtml(b.carNumber)}</td><td>${escapeHtml(b.phoneNumber)}</td><td>${escapeHtml(b.from)}</td><td>${escapeHtml(b.to)}</td>`;
+      tbody.appendChild(tr);
+    }
+  });
+
+  $('countAll').innerText = `All: ${counts.all}`;
+  $('countPast').innerText = `Past: ${counts.past}`;
+  $('countPresent').innerText = `Present: ${counts.present}`;
+  $('countUpcoming').innerText = `Upcoming: ${counts.upcoming}`;
+}
+
+function escapeHtml(str){ return String(str || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;'); }
+
+setInterval(()=>{
+  if($('blueprintSection').style.display === 'block') generateSlots();
+  if($('locationSection').style.display === 'block') openCity(currentCity);
+  if($('adminPanel').style.display === 'block' && $('adminBookingsView').style.display === 'block') loadAdminDashboard();
+}, 10000);
+</script>
+
+</body>
+</html>
