@@ -1,32 +1,32 @@
-package com.parkwise.service;
+package com.parkwise.demo.service;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.parkwise.model.Booking;
-import com.parkwise.repository.BookingRepository;
+import java.util.List;
+
+import com.parkwise.demo.repository.BookingRepository;
+import com.parkwise.demo.model.Booking;
 
 @Service
 public class BookingService {
 
-    private final BookingRepository repo;
+    @Autowired
+    private BookingRepository bookingRepository;
 
-    public BookingService(BookingRepository repo){
-        this.repo = repo;
+    public Booking saveBooking(Booking booking) {
+        return bookingRepository.save(booking);
     }
 
-    public Booking saveBooking(Booking booking){
-        return repo.save(booking);
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAll();
     }
 
-    public List<Booking> getAll(){
-        return repo.findAll();
+    public Object getBookingById(Long id) {
+        return bookingRepository.findById(id).orElse(null);
     }
 
-    public void removeExpired(){
-        List<Booking> expired = repo.findByToTimeBefore(LocalDateTime.now());
-        repo.deleteAll(expired);
+    public void deleteBooking(Long id) {
+        bookingRepository.deleteById(id);
     }
 }
