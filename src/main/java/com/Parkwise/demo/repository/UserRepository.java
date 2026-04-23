@@ -1,13 +1,8 @@
-package com.parkwise.repository;
-
-import java.util.Optional;
-
+package com.parkwise.demo.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
-
-import com.parkwise.model.User;
-
-public interface UserRepository extends JpaRepository<User,Long>{
-
-    Optional<User> findByUsername(String username);
-
+import org.springframework.stereotype.Repository;
+import com.parkwise.demo.model.User;
+@Repository
+public interface UserRepository extends JpaRepository<User, Long> {
+    User findByUsername(String username);
 }
