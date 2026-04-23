@@ -1,35 +1,33 @@
-package com.parkwise.controller;
+package com.parkwise.demo.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.parkwise.model.Booking;
-import com.parkwise.service.BookingService;
-
+import com.parkwise.demo.model.Booking;
+import com.parkwise.demo.service.BookingService;
+@CrossOrigin(origins = "*")
 @RestController
-@RequestMapping("/api/bookings")
-@CrossOrigin
+@RequestMapping("/bookings")
+
 public class BookingController {
 
-    private final BookingService service;
-
-    public BookingController(BookingService service){
-        this.service = service;
-    }
+    @Autowired
+    private BookingService bookingService;
 
     @PostMapping
-    public Booking create(@RequestBody Booking booking){
-        return service.saveBooking(booking);
+    public Booking book(@RequestBody Booking booking) {
+        return bookingService.saveBooking(booking);
     }
 
     @GetMapping
-    public List<Booking> getAll(){
-        return service.getAll();
+    public List<Booking> getAll() {
+        return bookingService.getAllBookings();
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(@PathVariable Long id) {
+        bookingService.deleteBooking(id);
     }
 }
